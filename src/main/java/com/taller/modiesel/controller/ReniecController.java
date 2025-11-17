@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/reniec")
-@CrossOrigin(origins = "http://localhost:3000")
 public class ReniecController {
 
     private final ReniecApiClient reniecApiClient;
