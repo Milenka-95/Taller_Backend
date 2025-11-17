@@ -1,5 +1,6 @@
 package com.taller.modiesel.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.List;
@@ -20,5 +21,6 @@ public class Cliente {
     private String telefono;
 
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<Vehiculo> vehiculos;
 }

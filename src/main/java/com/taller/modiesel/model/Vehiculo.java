@@ -1,5 +1,6 @@
 package com.taller.modiesel.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,5 +20,6 @@ public class Vehiculo {
 
     @ManyToOne
     @JoinColumn(name = "cliente_id")
+    @JsonBackReference
     private Cliente cliente;
 }

@@ -1,5 +1,6 @@
 package com.taller.modiesel.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -25,8 +26,10 @@ public class Venta {
     private Usuario empleado;
 
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<DetalleVenta> detalles;
 
     @OneToOne(mappedBy = "venta", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private Factura factura;
 }

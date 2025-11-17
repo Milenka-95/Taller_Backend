@@ -1,6 +1,7 @@
 package com.taller.modiesel.model;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class Factura {
     private double total;
 
     @OneToOne
-    @JoinColumn(name = "venta_id")
+    @JoinColumn(name = "venta_id", unique = true)
+    @JsonBackReference
     private Venta venta;
 }

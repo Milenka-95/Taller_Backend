@@ -1,4 +1,5 @@
 package com.taller.modiesel.model;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -12,6 +13,7 @@ public class DetalleVenta {
 
     @ManyToOne
     @JoinColumn(name = "venta_id")
+    @JsonBackReference
     private Venta venta;
 
     @ManyToOne

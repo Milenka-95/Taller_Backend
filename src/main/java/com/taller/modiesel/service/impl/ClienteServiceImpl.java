@@ -34,10 +34,26 @@ public class ClienteServiceImpl implements ClienteService {
     private ReniecApiService reniecApiService;
 
     public Cliente registrarCliente(Cliente cliente) {
-        Map<String, Object> respuesta = reniecApiService.consultarRuc(cliente.getRuc());
-        if (respuesta.get("success").equals(true)) {
-            Map<String, Object> datos = (Map<String, Object>) respuesta.get("data");
-            cliente.setRazonSocial((String) datos.get("RazonSocial"));
+        try {
+            Map<String, Object> respuesta = reniecApiService.consultarRuc(cliente.getRuc());
+            if (respuesta != null && Boolean.TRUE.equals(respuesta.get("success"))) {
+                Map<String, Object> datos = (Map<String, Object>) respuesta.get("data");
+                if (datos != null) {
+                    String razonSocial = (String) datos.get("nombre_o_razon_social");
+                    if (razonSocial == null) {
+                        razonSocial = (String) datos.get("razonSocial");
+                    }
+                    if (razonSocial == null) {
+                        razonSocial = (String) datos.get("RazonSocial");
+                    }
+                    if (razonSocial != null) {
+                        cliente.setRazonSocial(razonSocial);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Log error but continue with registration
+            System.err.println("Error consultando RUC: " + e.getMessage());
         }
         return clienteRepository.save(cliente);
     }
