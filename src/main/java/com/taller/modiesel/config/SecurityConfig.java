@@ -1,6 +1,11 @@
 package com.taller.modiesel.config;
+import com.taller.modiesel.security.CsrfProtectionFilter;
 import com.taller.modiesel.security.JwtRequestFilter;
 import com.taller.modiesel.security.SecurityHeadersFilter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -11,17 +16,22 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 @Configuration
@@ -30,68 +40,50 @@ public class SecurityConfig {
     @Value("${cors.allowed.origins:http://localhost:3000}")
     private String allowedOrigins;
 
+
     @Autowired
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Autowired
     private JwtRequestFilter jwtRequestFilter;
-
+    
     @Autowired
     private SecurityHeadersFilter securityHeadersFilter;
+    
+    @Autowired
+    private CsrfProtectionFilter csrfProtectionFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        // Configure CSRF protection with token repository
-        CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        tokenRepository.setCookieName("XSRF-TOKEN");
-        tokenRepository.setHeaderName("X-XSRF-TOKEN");
-        
-        CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
-        requestHandler.setCsrfRequestAttributeName("_csrf");
-
+        // Note: CSRF is disabled in Spring Security because we implement our own
+        // CSRF protection via CsrfProtectionFilter for REST API with JWT
         http
-                // Enable CORS support in Spring Security and use the CorsConfigurationSource bean
+                // Enable CORS support in Spring Security
                 .cors(Customizer.withDefaults())
-                // Enable CSRF protection with cookie-based token
-                .csrf(csrf -> csrf
-                    .csrfTokenRepository(tokenRepository)
-                    .csrfTokenRequestHandler(requestHandler)
-                    // Ignore CSRF for public read-only endpoints
-                    .ignoringRequestMatchers(
-                        "/api/auth/login",
-                        "/api/productos/listar",
-                        "/api/catalogo/**"
-                    )
-                )
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                    // Allow preflight OPTIONS requests
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    // Public endpoints
-                    .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                    .requestMatchers("/api/productos/listar", "/api/catalogo/**").permitAll()
-                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                    // Protected endpoints
-                    .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
-                    .requestMatchers("/api/ventas/**", "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
-                    .anyRequest().authenticated()
+                        // Allow preflight OPTIONS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/productos/**", "/api/catalogo/**").permitAll()
+                        // Swagger/OpenAPI endpoints
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // Admin-only endpoints
+                        .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                        // Admin and Employee endpoints
+                        .requestMatchers("/api/ventas/**", "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
+                        // All other requests require authentication
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                .sessionManagement(sess -> sess
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                    // Enable session fixation protection
-                    .sessionFixation().migrateSession()
-                )
-                // Configure secure cookies
-                .headers(headers -> headers
-                    .httpStrictTransportSecurity(hsts -> hsts
-                        .includeSubDomains(true)
-                        .maxAgeInSeconds(31536000)
-                    )
-                );
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // Add security filters
-        http.addFilterBefore(securityHeadersFilter, BasicAuthenticationFilter.class);
+        // Add security filters in the correct order
+        // Ensure our cors filter (from Spring) runs before other filters that might modify headers
+        http.addFilterBefore(securityHeadersFilter, CsrfFilter.class);
+        http.addFilterBefore(csrfProtectionFilter, CsrfFilter.class);
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
@@ -100,11 +92,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization", "X-XSRF-TOKEN", "X-Requested-With"));
+        // Use \s*,\s* to trim spaces around commas correctly
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split("\\s*,\\s*")));
+        configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Content-Type","Authorization","X-XSRF-TOKEN","X-Requested-With"));
         configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(Arrays.asList("Authorization", "X-XSRF-TOKEN"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization","X-XSRF-TOKEN"));
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -112,30 +105,24 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        // Usamos BCrypt por defecto. Si el valor almacenado no es BCrypt, se captura
-        // IllegalArgumentException y se hace un fallback a comparación en texto plano.
-        // NOTA: Esto es una compatibilidad temporal; lo seguro es migrar a BCrypt.
-        final BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
-        return new PasswordEncoder() {
-            @Override
-            public String encode(CharSequence rawPassword) {
-                return bcrypt.encode(rawPassword);
-            }
+    public CorsFilter corsFilter() {
+        // register the same configuration as an explicit CorsFilter to ensure it's applied early
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split("\\s*,\\s*")));
+        configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Content-Type","Authorization","X-XSRF-TOKEN","X-Requested-With"));
+        configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(Arrays.asList("Authorization","X-XSRF-TOKEN"));
+        configuration.setMaxAge(3600L);
+        source.registerCorsConfiguration("/**", configuration);
+        return new CorsFilter(source);
+    }
 
-            @Override
-            public boolean matches(CharSequence rawPassword, String encodedPassword) {
-                if (encodedPassword == null) {
-                    return false;
-                }
-                try {
-                    return bcrypt.matches(rawPassword, encodedPassword);
-                } catch (IllegalArgumentException ex) {
-                    // stored value no parece BCrypt: fallback (texto plano)
-                    return rawPassword.toString().equals(encodedPassword);
-                }
-            }
-        };
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        // Use BCrypt for secure password hashing
+        return new BCryptPasswordEncoder();
     }
 
     @Bean

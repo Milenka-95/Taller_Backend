@@ -3,13 +3,15 @@ package com.taller.modiesel.controller;
 import com.taller.modiesel.model.Vehiculo;
 import com.taller.modiesel.service.VehiculoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/vehiculos")
+@RequestMapping(value = "/api/vehiculos", produces = MediaType.APPLICATION_JSON_VALUE)
+@CrossOrigin(origins = "http://localhost:3000")
 public class VehiculoController {
 
     @Autowired
@@ -27,12 +29,12 @@ public class VehiculoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Vehiculo guardar(@RequestBody Vehiculo vehiculo) {
         return vehiculoService.guardar(vehiculo);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Vehiculo> actualizar(@PathVariable Long id, @RequestBody Vehiculo vehiculo) {
         Vehiculo actualizado = vehiculoService.actualizar(id, vehiculo);
         if (actualizado != null) {

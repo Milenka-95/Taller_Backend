@@ -15,40 +15,26 @@ public class SecurityHeadersFilter implements Filter {
         
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         
-        // X-Content-Type-Options: Prevents MIME type sniffing
-        httpResponse.setHeader("X-Content-Type-Options", "nosniff");
-        
-        // X-Frame-Options: Prevents clickjacking attacks
+        // Anti-Clickjacking: Prevent the page from being loaded in frames
         httpResponse.setHeader("X-Frame-Options", "DENY");
         
-        // Strict-Transport-Security (HSTS): Forces HTTPS
-        // Note: Only enable if your application is fully HTTPS
-        httpResponse.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+        // Prevent MIME type sniffing
+        httpResponse.setHeader("X-Content-Type-Options", "nosniff");
         
-        // Referrer-Policy: Controls referrer information
-        httpResponse.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+        // Control referrer information
+        httpResponse.setHeader("Referrer-Policy", "no-referrer");
         
-        // Content-Security-Policy: Mitigates XSS and other injection attacks
-        // Starting with a restrictive policy - adjust based on your needs
+        // Enforce HTTPS (only send if the connection is secure)
+        // In production with HTTPS, this should be uncommented
+        // httpResponse.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+        
+        // Content Security Policy - adjust based on your needs
         httpResponse.setHeader("Content-Security-Policy", 
-            "default-src 'self'; " +
-            "script-src 'self'; " +
-            "style-src 'self' 'unsafe-inline'; " +
-            "img-src 'self' data: https:; " +
-            "font-src 'self'; " +
-            "connect-src 'self'; " +
-            "frame-ancestors 'none'; " +
-            "base-uri 'self'; " +
-            "form-action 'self'");
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
         
-        // X-Permitted-Cross-Domain-Policies: Restricts cross-domain policies
-        httpResponse.setHeader("X-Permitted-Cross-Domain-Policies", "none");
-        
-        // Cache-Control: Prevents caching of sensitive data
-        // This will be set on specific endpoints, but we set a default here
-        httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        httpResponse.setHeader("Pragma", "no-cache");
-        httpResponse.setHeader("Expires", "0");
+        // Permissions Policy (formerly Feature-Policy)
+        httpResponse.setHeader("Permissions-Policy", 
+            "geolocation=(), microphone=(), camera=()");
         
         chain.doFilter(request, response);
     }

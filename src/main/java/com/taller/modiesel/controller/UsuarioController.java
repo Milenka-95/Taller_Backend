@@ -3,11 +3,13 @@ package com.taller.modiesel.controller;
 import com.taller.modiesel.model.Usuario;
 import com.taller.modiesel.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/usuarios")
+@RequestMapping(value = "/api/usuarios", produces = MediaType.APPLICATION_JSON_VALUE)
+@CrossOrigin(origins = "http://localhost:3000")
 public class UsuarioController {
 
     @Autowired
@@ -23,12 +25,12 @@ public class UsuarioController {
         return usuarioService.obtenerUsuarioPorId(id);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Usuario registrar(@RequestBody Usuario usuario) {
         return usuarioService.registrarUsuario(usuario);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Usuario actualizar(@PathVariable Long id, @RequestBody Usuario usuario) {
         usuario.setId(id);
         return usuarioService.actualizarUsuario(id, usuario);

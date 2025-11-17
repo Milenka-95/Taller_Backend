@@ -18,11 +18,14 @@ public class WebConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
+                        // Use specific origins - NO wildcards for security
+                        // Configure allowed origins via application.properties
                         .allowedOrigins(allowedOrigins.split(","))
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("Content-Type", "Authorization", "X-XSRF-TOKEN", "X-Requested-With")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                        // Specify allowed headers instead of wildcard
+                        .allowedHeaders("Authorization", "Content-Type", "X-CSRF-Token", "Accept")
                         .allowCredentials(true)
-                        .exposedHeaders("Authorization", "X-XSRF-TOKEN")
+                        .exposedHeaders("Authorization", "X-CSRF-Token")
                         .maxAge(3600);
             }
         };

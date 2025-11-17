@@ -3,11 +3,13 @@ package com.taller.modiesel.controller;
 import com.taller.modiesel.model.Venta;
 import com.taller.modiesel.service.VentaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/ventas")
+@RequestMapping(value = "/api/ventas", produces = MediaType.APPLICATION_JSON_VALUE)
+@CrossOrigin(origins = "http://localhost:3000")
 public class VentaController {
 
     @Autowired
@@ -18,7 +20,7 @@ public class VentaController {
         return ventaService.listarVentas();
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Venta registrar(@RequestBody Venta venta) {
         return ventaService.registrarVenta(venta);
     }

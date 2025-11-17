@@ -1,10 +1,12 @@
 package com.taller.modiesel.controller;
 
 import com.taller.modiesel.external.ReniecApiClient;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/reniec")
+@RequestMapping(value = "/api/reniec", produces = MediaType.APPLICATION_JSON_VALUE)
+@CrossOrigin(origins = "http://localhost:3000")
 public class ReniecController {
 
     private final ReniecApiClient reniecApiClient;

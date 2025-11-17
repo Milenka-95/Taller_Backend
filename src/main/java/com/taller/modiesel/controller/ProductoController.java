@@ -3,11 +3,13 @@ package com.taller.modiesel.controller;
 import com.taller.modiesel.model.Producto;
 import com.taller.modiesel.service.ProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/productos")
+@RequestMapping(value = "/api/productos", produces = MediaType.APPLICATION_JSON_VALUE)
+@CrossOrigin(origins = "http://localhost:3000")
 public class ProductoController {
 
     @Autowired
@@ -18,12 +20,12 @@ public class ProductoController {
         return productoService.listarProductos();
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Producto registrar(@RequestBody Producto producto) {
         return productoService.registrarProducto(producto);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Producto actualizar(@PathVariable Long id, @RequestBody Producto producto) {
         producto.setId(id);
         return productoService.actualizarProducto(id, producto);
