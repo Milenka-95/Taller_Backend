@@ -1,5 +1,6 @@
 package com.taller.modiesel.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -8,17 +9,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig {
 
+    @Value("${cors.allowed.origins:http://localhost:3000}")
+    private String allowedOrigins;
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
-                        .allowedOriginPatterns("http://localhost:3000", "http://localhost:*") // USA allowedOriginPatterns en lugar de allowedOrigins
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                        .allowedHeaders("*")
+                registry.addMapping("/api/**")
+                        .allowedOrigins(allowedOrigins.split(","))
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("Content-Type", "Authorization", "X-XSRF-TOKEN", "X-Requested-With")
                         .allowCredentials(true)
-                        .exposedHeaders("Authorization")
+                        .exposedHeaders("Authorization", "X-XSRF-TOKEN")
                         .maxAge(3600);
             }
         };
