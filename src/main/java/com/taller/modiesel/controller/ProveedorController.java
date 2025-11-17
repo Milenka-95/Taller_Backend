@@ -3,12 +3,13 @@ package com.taller.modiesel.controller;
 import com.taller.modiesel.model.Proveedor;
 import com.taller.modiesel.service.ProveedorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/proveedores")
+@RequestMapping(value = "/api/proveedores", produces = MediaType.APPLICATION_JSON_VALUE)
 @CrossOrigin(origins = "http://localhost:3000")
 public class ProveedorController {
 
@@ -24,12 +25,12 @@ public class ProveedorController {
         return proveedorService.obtenerPorId(id).orElse(null);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Proveedor crearProveedor(@RequestBody Proveedor proveedor) {
         return proveedorService.guardar(proveedor);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Proveedor actualizarProveedor(@PathVariable Long id, @RequestBody Proveedor proveedor) {
         return proveedorService.actualizar(id, proveedor);
     }

@@ -3,13 +3,14 @@ package com.taller.modiesel.controller;
 import com.taller.modiesel.model.DetalleVenta;
 import com.taller.modiesel.service.DetalleVentaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/detalle-venta")
+@RequestMapping(value = "/detalle-venta", produces = MediaType.APPLICATION_JSON_VALUE)
 @CrossOrigin(origins = "http://localhost:3000")
 public class DetalleVentaController {
 
@@ -28,12 +29,12 @@ public class DetalleVentaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public DetalleVenta guardar(@RequestBody DetalleVenta detalleVenta) {
         return detalleVentaService.guardar(detalleVenta);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<DetalleVenta> actualizar(@PathVariable Long id, @RequestBody DetalleVenta detalleVenta) {
         DetalleVenta actualizado = detalleVentaService.actualizar(id, detalleVenta);
         if (actualizado != null) {
