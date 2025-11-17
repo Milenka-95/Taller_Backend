@@ -1,5 +1,7 @@
 package com.taller.modiesel.config;
+import com.taller.modiesel.security.CsrfProtectionFilter;
 import com.taller.modiesel.security.JwtRequestFilter;
+import com.taller.modiesel.security.SecurityHeadersFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -32,35 +35,48 @@ public class SecurityConfig {
 
     @Autowired
     private JwtRequestFilter jwtRequestFilter;
+    
+    @Autowired
+    private SecurityHeadersFilter securityHeadersFilter;
+    
+    @Autowired
+    private CsrfProtectionFilter csrfProtectionFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-/***
- http
- .csrf(csrf -> csrf.disable())
- .authorizeHttpRequests(auth -> auth
- .requestMatchers("/api/auth/**").permitAll()
- .requestMatchers("/api/productos/**", "/api/catalogo/**").permitAll()
- .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
- .requestMatchers("/api/ventas/**", "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
- .anyRequest().authenticated()
- )
- .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
- .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
- ***/
+        // Note: CSRF is disabled in Spring Security because we implement our own
+        // CSRF protection via CsrfProtectionFilter for REST API with JWT
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-                );
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/productos/**", "/api/catalogo/**").permitAll()
+                        // Swagger/OpenAPI endpoints
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // Admin-only endpoints
+                        .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                        // Admin and Employee endpoints
+                        .requestMatchers("/api/ventas/**", "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
+                        // All other requests require authentication
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        // Add security filters in the correct order
+        http.addFilterBefore(securityHeadersFilter, CsrfFilter.class);
+        http.addFilterBefore(csrfProtectionFilter, CsrfFilter.class);
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        
         return http.build();
     }
+    
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return  NoOpPasswordEncoder.getInstance();
+        // Use BCrypt for secure password hashing
+        return new BCryptPasswordEncoder();
     }
 
     @Bean

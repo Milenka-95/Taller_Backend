@@ -4,6 +4,7 @@ import com.taller.modiesel.model.Usuario;
 import com.taller.modiesel.repository.UsuarioRepository;
 import com.taller.modiesel.security.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping(value = "/api/auth", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AuthController {
 
     @Autowired
@@ -26,7 +27,7 @@ public class AuthController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    @PostMapping("/login")
+    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public String login(@RequestBody Usuario loginRequest) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getCorreo(), loginRequest.getPassword())
@@ -36,7 +37,7 @@ public class AuthController {
         return jwtTokenUtil.generateToken(userDetails.getUsername());
     }
 
-    @PostMapping("/register")
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Usuario register(@RequestBody Usuario usuario) {
         usuario.setPassword(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode(usuario.getPassword()));
         return usuarioRepository.save(usuario);
