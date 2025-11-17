@@ -3,12 +3,13 @@ package com.taller.modiesel.controller;
 import com.taller.modiesel.model.Cliente;
 import com.taller.modiesel.service.ClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/clientes")
+@RequestMapping(value = "/api/clientes", produces = MediaType.APPLICATION_JSON_VALUE)
 @CrossOrigin(origins = "http://localhost:3000")
 public class ClienteController {
 
@@ -25,12 +26,12 @@ public class ClienteController {
         return clienteService.obtenerClientePorId(id);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Cliente registrar(@RequestBody Cliente cliente) {
         return clienteService.registrarCliente(cliente);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Cliente actualizar(@PathVariable Long id, @RequestBody Cliente cliente) {
         cliente.setId(id);
         return clienteService.actualizarCliente(id, cliente);

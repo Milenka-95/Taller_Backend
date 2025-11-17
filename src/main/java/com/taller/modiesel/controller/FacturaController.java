@@ -2,13 +2,14 @@ package com.taller.modiesel.controller;
 import com.taller.modiesel.model.Factura;
 import com.taller.modiesel.service.FacturaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/facturas")
+@RequestMapping(value = "/api/facturas", produces = MediaType.APPLICATION_JSON_VALUE)
 @CrossOrigin(origins = "http://localhost:3000")
 public class FacturaController {
 
@@ -27,12 +28,12 @@ public class FacturaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Factura guardar(@RequestBody Factura factura) {
         return facturaService.guardar(factura);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Factura> actualizar(@PathVariable Long id, @RequestBody Factura factura) {
         Factura actualizado = facturaService.actualizar(id, factura);
         if (actualizado != null) {
